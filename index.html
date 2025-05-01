@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📸 TravelHive Photo Magazine</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #f0f0f0; /* Lighter background */
+      color: #444; /* Slightly lighter text */
+      line-height: 1.7;
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* Center content horizontally */
+    }
+
+    header {
+      background: #386641; /* Deeper green */
+      padding: 25px 40px; /* More padding */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15);
+      width: 100%; /* Full width header */
+    }
+
+    header h2 {
+      margin: 0;
+      font-size: 2.4rem; /* Larger title */
+      font-weight: bold;
+      letter-spacing: 0.8px;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      background: #2e5e3a; /* Darker green button */
+      padding: 12px 24px; /* More button padding */
+      border-radius: 10px;
+      font-weight: bold;
+      transition: background 0.3s ease-in-out;
+    }
+
+    header a:hover {
+      background: #254d2f;
+    }
+
+    h1 {
+      text-align: center;
+      color: #d9534f;
+      margin: 50px 0 30px; /* More vertical margin */
+      font-size: 3.2rem; /* Even larger title */
+      font-weight: bold;
+      letter-spacing: 1.2px;
+    }
+
+    .upload-section {
+      text-align: center;
+      margin-bottom: 50px; /* More bottom margin */
+      padding: 30px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      width: 90%; /* Wider upload section */
+      max-width: 700px;
+    }
+
+    input[type="file"] {
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      font-size: 1.1rem;
+    }
+
+    button {
+      padding: 15px 30px; /* Larger button */
+      background: #386641;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 30px; /* More top margin */
+      transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      font-size: 1.1rem;
+    }
+
+    button:hover {
+      background: #2e5e3a;
+      transform: translateY(-3px);
+    }
+
+    /* Big Image Slider Container */
+    .image-slider-container {
+      max-width: 90%; /* Even wider slider */
+      max-height: 700px; /* Increased max height */
+      margin: 60px auto; /* More margin */
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); /* More prominent shadow */
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .image-slider {
+      display: flex;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); /* More pronounced animation */
+      height: 100%; /* Fill container height */
+    }
+
+    .image-slider img {
+      width: 100%;
+      height: 100%;
+      flex-shrink: 0;
+      border-radius: 12px;
+      object-fit: contain; /* Or 'cover' depending on desired effect */
+    }
+
+    .slider-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .slider-btn {
+      background: rgba(0, 0, 0, 0.6); /* Slightly more opaque */
+      color: white;
+      border: none;
+      padding: 12px 20px; /* Larger navigation buttons */
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.4rem;
+      opacity: 0.8;
+      transition: opacity 0.2s ease-in-out, transform 0.1s ease-in-out;
+    }
+
+    .slider-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .slider-dots {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #ccc;
+      margin: 0 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .dot.active {
+      background-color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>TravelHive</h2>
+    <a href="index.html">🏠 Home</a>
+  </header>
+
+  <h1>📸 TravelHive Photo Magazine</h1>
+
+  <div class="upload-section">
+    <input type="file" id="imageUpload" accept="image/*" multiple />
+    <br>
+    <button onclick="uploadMultipleImages()">Upload Multiple Photos</button>
+  </div>
+
+  <div class="image-slider-container" id="sliderContainer">
+    <div class="image-slider" id="imageSlider">
+      </div>
+    <div class="slider-nav">
+      <button class="slider-btn" onclick="prevSlide()">←</button>
+      <button class="slider-btn" onclick="nextSlide()">→</button>
+    </div>
+    <div class="slider-dots" id="sliderDots">
+      </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCJbiczgc0J5XA4Z7u1Mw3ZeROehQ0XV7A",
+      authDomain: "trip-photo-app.firebaseapp.com",
+      projectId: "trip-photo-app",
+      storageBucket: "trip-photo-app.appspot.com",
+      messagingSenderId: "773787417880",
+      appId: "1:773787417880:web:9803bac565ddcc0e1eb26d",
+      measurementId: "G-Z5XQL5J3D6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+    const db = firebase.firestore();
+
+    let imageList = [];
+    let currentIndex = 0;
+    let slideInterval;
+    const slider = document.getElementById('imageSlider');
+    const sliderContainer = document.getElementById('sliderContainer');
+    const dotsContainer = document.getElementById('sliderDots');
+
+    function uploadMultipleImages() {
+      const files = document.getElementById("imageUpload").files;
+      if (!files.length) return alert("Please select images to upload.");
+
+      Array.from(files).forEach(file => {
+        const ref = storage.ref('magazine_photos/' + Date.now() + "_" + file.name);
+        ref.put(file)
+          .then(snapshot => snapshot.ref.getDownloadURL())
+          .then(url => db.collection("photos").add({
+            imageUrl: url,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          }))
+          .catch(err => console.error("Upload failed for " + file.name + ": " + err));
+      });
+
+      alert("Uploading photos...");
+      document.getElementById("imageUpload").value = "";
+    }
+
+    function updateSlider() {
+      if (imageList.length > 0) {
+        const translateValue = -currentIndex * 100 + '%';
+        slider.style.transform = `translateX(${translateValue})`;
+        updateDots();
+      }
+    }
+
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % imageList.length;
+      updateSlider();
+      resetInterval();
+    }
+
+    function prevSlide() {
+      currentIndex = (currentIndex - 1 + imageList.length) % imageList.length;
+      updateSlider();
+      resetInterval();
+    }
+
+    function goToSlide(index) {
+      currentIndex = index;
+      updateSlider();
+      resetInterval();
+    }
+
+    function startInterval() {
+      slideInterval = setInterval(nextSlide, 4000); // Slightly slower automatic slide
+    }
+
+    function resetInterval() {
+      clearInterval(slideInterval);
+      startInterval();
+    }
+
+    function updateDots() {
+      dotsContainer.innerHTML = '';
+      imageList.forEach((_, index) => {
+        const dot = document.createElement('span');
+        dot.classList.add('dot');
+        if (index === currentIndex) {
+          dot.classList.add('active');
+        }
+        dot.onclick = () => goToSlide(index);
+        dotsContainer.appendChild(dot);
+      });
+    }
+
+    db.collection("photos").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+      imageList = [];
+      slider.innerHTML = "";
+      if (snapshot.empty) {
+        sliderContainer.style.display = 'none';
+        return;
+      } else {
+        sliderContainer.style.display = 'flex'; /* Ensure slider is a flex container */
+      }
+
+      snapshot.forEach(doc => {
+        const url = doc.data().imageUrl;
+        imageList.push(url);
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "Travel Photo";
+        slider.appendChild(img);
+      });
+
+      currentIndex = 0;
+      updateSlider();
+      updateDots();
+      resetInterval();
+    });
+
+    // Hide the old gallery and viewer if they exist
+    const oldGallery = document.getElementById('gallery');
+    if (oldGallery) {
+      oldGallery.style.display = 'none';
+    }
+    const oldViewer = document.getElementById('viewer');
+    if (oldViewer) {
+      oldViewer.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
